@@ -1,4 +1,3 @@
-
 # The MIT License (MIT)
 #
 # Copyright (c) 2018 Pascal Deneaux <deneaux@mail.de>
@@ -30,112 +29,116 @@ finite state machine to parse every new symbol typed in.
 * Author(s): Pascal Deneaux
 """
 
-import sys
-from PyQt4.QtCore import *
+from sys import argv, exit
 from PyQt4.QtGui import *
 from PyQt4.uic import *
 
 parse_string = ""
 state = 'A'
-openbrackets = 0
+open_brackets = 0
 
-digits = [chr(x) for x in range(ord('1'),ord('9')+1)]
+digits = [chr(x) for x in range(ord('1'), ord('9') + 1)]
 operations = ['÷', '×', '+']
-alphabet = digits+operations+['0','(',')',',','−']
+alphabet = digits + operations + ['0', '(', ')', ',', '−']
 
+# A dict of string:list of (tuples of (list,string))
 fsm_transition_table = {
-#State	,	input 		, nextstate
-'A':[	(	['('] 		, 'A'       ),
-        (	digits    	, 'B'       ),
-        (	['−'] 		, 'C'       ),
-        (	['0'] 		, 'D'       ),
-    ],
-'B':[	(	operations	, 'A'       ),
-        (	digits+['0'], 'B'       ),
-        (	['−'] 		, 'C'       ),
-        (	[','] 		, 'E'       ),
-        (	[')']		, 'G'       ),
-    ],
-'C':[   (	['('] 		, 'A'       ),
-        (	digits    	, 'B'       ),
-        (	['0'] 		, 'D'       )
-    ],
-'D':[   (	operations	, 'A'       ),
-        (	['−'] 		, 'C'       ),
-        (	[','] 		, 'E'       ),
-        (	[')']		, 'G'       ),
-    ],
-'E':[   (	digits+['0'], 'F'       )
-    ],
-'F':[   (	operations	, 'A'       ),
-        (	['−'] 		, 'C'       ),
-        (	digits+['0'], 'F'       ),
-        (	[')']		, 'G'       ),
-    ],
-'G':[   (	operations	, 'A'       ),
-        (	['−'] 		, 'C'       ),
-        (	[')']		, 'G'       ),
-    ],
+    # state ,input        , next_state
+    'A': [(['('],           'A'),
+          (digits,          'B'),
+          (['−'],           'C'),
+          (['0'],           'D'),
+          ],
+    'B': [(operations,      'A'),
+          (digits + ['0'],  'B'),
+          (['−'],           'C'),
+          ([','],           'E'),
+          ([')'],           'G'),
+          ],
+    'C': [(['('],           'A'),
+          (digits,          'B'),
+          (['0'],           'D')
+          ],
+    'D': [(operations,      'A'),
+          (['−'],           'C'),
+          ([','],           'E'),
+          ([')'],           'G'),
+          ],
+    'E': [(digits + ['0'],  'F')
+          ],
+    'F': [(operations,      'A'),
+          (['−'],           'C'),
+          (digits + ['0'],  'F'),
+          ([')'],           'G'),
+          ],
+    'G': [(operations,      'A'),
+          (['−'],           'C'),
+          ([')'],           'G'),
+          ],
 }
 
-def clearText():
-	global parse_string, state, openbrackets
-	parse_string = ""
-	state = 'A'
-	openbrackets = 0
-	ui.pTE_display.setPlainText("Eingabe bitte")
+
+def clear_text():
+    global parse_string, state, open_brackets
+    parse_string = ""
+    state = 'A'
+    open_brackets = 0
+    ui.pTE_display.setPlainText("Eingabe bitte")
+
 
 def new_symbol(symbol):
-	global parse_string, state, alphabet, fsm_transition_table, openbrackets
+    global parse_string, state, alphabet, fsm_transition_table, open_brackets
 
-	if symbol not in alphabet:
-		print("Symbol ist nicht Teil des Eingabealphabets: " + symbol + " !")
-		return
-	if symbol in {')'} and openbrackets < 1:
-		print("Eine Klammer bitte immer erst öffnen!")
-		return
+    if symbol not in alphabet:
+        print("Symbol ist nicht Teil des Eingabealphabets: " + symbol + " !")
+        return
+    if symbol in {')'} and open_brackets < 1:
+        print("Eine Klammer bitte immer erst öffnen!")
+        return
 
-	#Liste aller möglichen Eingabe-Symbole des aktuellen Zustands
-	inputs  = [x[0] for x in fsm_transition_table[state]]
-	#Liste aller möglichen Zustandsübergänge des aktuellen Zustands
-	next_states = [x[1] for x in fsm_transition_table[state]]
+    # Liste aller möglichen Eingabe-Symbole des aktuellen Zustands
+    inputs = [x[0] for x in fsm_transition_table[state]]
+    # Liste aller möglichen Zustandsübergänge des aktuellen Zustands
+    next_states = [x[1] for x in fsm_transition_table[state]]
 
-	# ist in der Liste 'inputs' einmal das jetzige Eingabe-Symbol vorhanden?
-	if True in [symbol in x for x in inputs]:
-		if symbol in {'('}:
-			openbrackets += 1
+    # ist in der Liste 'inputs' einmal das jetzige Eingabe-Symbol vorhanden?
+    if True in [symbol in x for x in inputs]:
+        if symbol in {'('}:
+            open_brackets += 1
 
-		if symbol in {')'}:
-			openbrackets -= 1
+        if symbol in {')'}:
+            open_brackets -= 1
 
-		# An der Position no in der Liste der Zustandsübergänge des aktuellen
-		# Zustands, wurde das aktuelle Eingabe-Symbol gefunden.
-		no = [symbol in x for x in inputs].index(True)
-		state = next_states[no]
-		print ("Zustand: " + state)
+        # An der Position no in der Liste der Zustandsübergänge des aktuellen
+        # Zustands, wurde das aktuelle Eingabe-Symbol gefunden.
+        no = [symbol in x for x in inputs].index(True)
+        state = next_states[no]
+        print("Zustand: " + state)
 
-		parse_string += symbol
-		ui.pTE_display.setPlainText(parse_string)
-	else:
-		print("Das Symbol " + symbol + " ist hier nicht erlaubt!")
+        parse_string += symbol
+        ui.pTE_display.setPlainText(parse_string)
+    else:
+        print("Das Symbol " + symbol + " ist hier nicht erlaubt!")
+
 
 def evaluate():
-	global parse_string, state, openbrackets
-	if parse_string:
-		try:
-			result = eval(parse_string.replace(",",".").replace("÷","/").replace("×","*").replace("−","-"))
-			parse_string = str(result)
-			state = 'G'
-			openbrackets = 0
-			ui.pTE_display.setPlainText(str(result))
-		except ZeroDivisionError:
-			clearText()
-			ui.pTE_display.setPlainText("Division durch 0 nicht erlaubt")
+    global parse_string, state, open_brackets
+    if parse_string:
+        try:
+            result = eval(parse_string.replace(",", ".").replace("÷", "/").replace("×", "*").replace("−", "-"))
+            parse_string = str(result)
+            state = 'G'
+            open_brackets = 0
+            ui.pTE_display.setPlainText(str(result))
+        except ZeroDivisionError:
+            clear_text()
+            ui.pTE_display.setPlainText("Division durch 0 nicht erlaubt")
 
-app = QApplication(sys.argv)
+
+app = QApplication(argv)
 ui = loadUi("form.ui")
 ui.pB_ret.clicked.connect(evaluate)
-ui.pB_del.clicked.connect(clearText)
+ui.pB_del.clicked.connect(clear_text)
 ui.pB_Z0.clicked.connect(lambda: new_symbol("0"))
 ui.pB_Z1.clicked.connect(lambda: new_symbol("1"))
 ui.pB_Z2.clicked.connect(lambda: new_symbol("2"))
@@ -155,4 +158,4 @@ ui.pB_ob.clicked.connect(lambda: new_symbol("("))
 ui.pB_cb.clicked.connect(lambda: new_symbol(")"))
 
 ui.show()
-sys.exit(app.exec_())
+exit(app.exec_())
