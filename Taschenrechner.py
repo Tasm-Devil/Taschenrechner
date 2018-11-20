@@ -29,10 +29,6 @@ finite state machine to parse every new symbol typed in.
 * Author(s): Pascal Deneaux
 """
 
-from sys import argv, exit
-from PyQt4.QtGui import *
-from PyQt4.uic import *
-
 parse_string = ""
 state = 'A'
 open_brackets = 0
@@ -134,6 +130,9 @@ def evaluate():
             clear_text()
             ui.pTE_display.setPlainText("Division durch 0 nicht erlaubt")
 
+from PyQt5.QtWidgets import QApplication
+from PyQt5.uic import loadUi
+from sys import argv, exit
 
 app = QApplication(argv)
 ui = loadUi("form.ui")
@@ -159,3 +158,4 @@ ui.pB_cb.clicked.connect(lambda: new_symbol(")"))
 
 ui.show()
 exit(app.exec_())
+
